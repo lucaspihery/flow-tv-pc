@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../live_tv/domain/channel.dart';
 import 'player_view.dart';
+import 'widgets/player_controls.dart';
 
 /// Construit le lecteur d'une chaîne. Surchargeable dans les tests, où libmpv n'est pas disponible.
 typedef PlayerPanelBuilder = Widget Function(Channel channel, VoidCallback onClose);
@@ -67,11 +68,42 @@ class _PlayerPanelState extends State<PlayerPanel> {
       stream: _player.stream.buffering,
       builder: (context, snapshot) => PlayerView(
         channel: widget.channel,
-        video: Video(controller: _video),
+        video: Video(
+          controller: _video,
+          controls: (state) => _MediaKitControls(state: state),
+        ),
         buffering: snapshot.data ?? false,
         error: _error,
         onRetry: _open,
         onClose: widget.onClose,
+      ),
+    );
+  }
+}
+
+/// Relie [PlayerControls] au lecteur media_kit (lecture, volume, plein écran).
+class _MediaKitControls extends StatelessWidget {
+  const _MediaKitControls({required this.state});
+
+  final VideoState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final player = state.widget.controller.player;
+    return StreamBuilder<bool>(
+      stream: player.stream.playing,
+      initialData: player.state.playing,
+      builder: (context, playing) => StreamBuilder<double>(
+        stream: player.stream.volume,
+        initialData: player.state.volume,
+        builder: (context, volume) => PlayerControls(
+          playing: playing.data ?? false,
+          volume: volume.data ?? 100,
+          fullscreen: state.isFullscreen(),
+          onPlayPause: player.playOrPause,
+          onVolumeChanged: player.setVolume,
+          onToggleFullscreen: state.toggleFullscreen,
+        ),
       ),
     );
   }
