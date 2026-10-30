@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_theme.dart';
+import '../../../channel_quality/presentation/channel_qualities_controller.dart';
 import '../../../favorites/presentation/favorites_controller.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../domain/channel.dart';
@@ -26,6 +27,7 @@ class _ChannelTileState extends ConsumerState<ChannelTile> {
   Widget build(BuildContext context) {
     final favorite = ref.watch(favoritesProvider.select((ids) => ids.contains(widget.channel.id)));
     final highlighted = _hover || widget.selected;
+    final quality = ref.watch(channelQualitiesProvider.select((q) => q[widget.channel.id]));
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
@@ -90,6 +92,9 @@ class _ChannelTileState extends ConsumerState<ChannelTile> {
                     ),
                   ),
                   if (widget.selected) const Positioned(top: 10, left: 10, child: _PlayingBadge()),
+                  // Chaîne déjà regardée : qualité mesurée alors par le lecteur, ex. « 4K · 50 fps ».
+                  if (quality != null && !widget.selected)
+                    Positioned(top: 8, left: 8, child: _QualityBadge(quality.label)),
                   // L'étoile n'apparaît qu'au survol, sauf si la chaîne est déjà en favori.
                   if (_hover || favorite)
                     Positioned(top: 2, right: 2, child: FavoriteButton(channel: widget.channel, size: 20)),
@@ -112,6 +117,25 @@ class _PlayingBadge extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: const BoxDecoration(shape: BoxShape.circle, gradient: AppColors.actionGradient),
       child: const Icon(Icons.graphic_eq_rounded, size: 14, color: Colors.white),
+    );
+  }
+}
+
+class _QualityBadge extends StatelessWidget {
+  const _QualityBadge(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(6)),
+      child: Text(
+        label,
+        maxLines: 1,
+        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.white),
+      ),
     );
   }
 }

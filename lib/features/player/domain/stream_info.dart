@@ -1,3 +1,6 @@
+import '../../channel_quality/domain/channel_quality.dart';
+import 'video_resolution.dart';
+
 /// Caractéristiques techniques du flux en cours de lecture.
 class StreamInfo {
   const StreamInfo({this.width, this.height, this.fps, this.videoCodec, this.bitrate});
@@ -16,27 +19,15 @@ class StreamInfo {
 
   bool get isEmpty => height == null && fps == null && videoCodec == null && bitrate == null;
 
-  /// Libellé court de la qualité : « 4K », « FHD 1080p », « HD 720p », « SD 576p »…
-  String? get qualityLabel {
-    final h = height;
-    if (h == null || h <= 0) return null;
-    return switch (h) {
-      >= 2000 => '4K',
-      >= 1400 => 'QHD ${h}p',
-      >= 1000 => 'FHD ${h}p',
-      >= 700 => 'HD ${h}p',
-      _ => 'SD ${h}p',
-    };
-  }
+  VideoResolution? get resolution => VideoResolution.of(width ?? 0, height ?? 0);
 
-  /// « 50 ips », « 29,97 ips »…
-  String? get fpsLabel {
-    final f = fps;
-    if (f == null || f <= 0) return null;
-    final rounded = f.roundToDouble();
-    final text = (f - rounded).abs() < 0.01 ? rounded.toInt().toString() : f.toStringAsFixed(2).replaceAll('.', ',');
-    return '$text ips';
-  }
+  FrameRate? get frameRate => FrameRate.of(fps);
+
+  /// « SD », « 720p », « 1080p », « 1440p » ou « 4K ».
+  String? get qualityLabel => resolution?.label;
+
+  /// « 50 fps » (arrondi).
+  String? get fpsLabel => frameRate?.label;
 
   /// « 6,2 Mb/s » ou « 850 kb/s ».
   String? get bitrateLabel {
@@ -47,4 +38,11 @@ class StreamInfo {
   }
 
   String? get resolutionLabel => (width != null && height != null) ? '$width×$height' : null;
+}
+
+/// Qualité à mémoriser pour la chaîne : `null` tant que la résolution est inconnue.
+ChannelQuality? channelQualityOf(StreamInfo info) {
+  final resolution = info.resolution;
+  if (resolution == null) return null;
+  return ChannelQuality(resolution: resolution.label, frameRate: info.frameRate?.fps);
 }

@@ -14,7 +14,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   testWidgets('compte enregistré : affiche les chaînes, filtre par catégorie et par recherche', (tester) async {
     const account = XtreamAccount(serverUrl: 'http://exemple.com', username: 'lucas', password: 'x');
-    SharedPreferences.setMockInitialValues({'iptv_account': jsonEncode(account.toJson())});
+    SharedPreferences.setMockInitialValues({
+      'iptv_account': jsonEncode(account.toJson()),
+      'channel_qualities:${account.storageKey}': jsonEncode({
+        '3': {'resolution': '4K', 'frameRate': 50},
+      }),
+    });
     final prefs = await SharedPreferences.getInstance();
     tester.view
       ..physicalSize = const Size(1440, 900)
@@ -39,6 +44,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('3 chaînes'), findsOneWidget);
+    // Eurosport 1 a déjà été regardée : sa qualité mesurée s'affiche sur la tuile.
+    expect(find.text('4K · 50 fps'), findsOneWidget);
     expect(find.text('lucas@exemple.com'), findsOneWidget);
 
     await tester.tap(find.text('Sport'));

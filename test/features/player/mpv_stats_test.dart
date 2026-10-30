@@ -1,6 +1,7 @@
 import 'package:flow_tv/features/player/data/mpv_stats.dart';
 import 'package:flow_tv/features/player/domain/stream_info.dart';
 import 'package:flow_tv/features/player/domain/timeshift_window.dart';
+import 'package:flow_tv/features/player/domain/video_resolution.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -14,24 +15,41 @@ void main() {
         'video-format': 'h264',
         'video-bitrate': '6245000',
       });
-      expect(info.qualityLabel, 'FHD 1080p');
-      expect(info.fpsLabel, '50 ips');
+      expect(info.qualityLabel, '1080p');
+      expect(info.fpsLabel, '50 fps');
       expect(info.bitrateLabel, '6,2 Mb/s');
       expect(info.videoCodec, 'H.264');
       expect(info.resolutionLabel, '1920×1080');
     });
 
-    test('propriétés absentes : repli sur estimated-vf-fps, libellés nuls', () {
+    test('propriétés absentes : repli sur estimated-vf-fps arrondi, libellés nuls', () {
       final info = MpvStats.parseStreamInfo({'container-fps': '', 'estimated-vf-fps': '29.97'});
-      expect(info.fpsLabel, '29,97 ips');
+      expect(info.fpsLabel, '30 fps');
       expect(info.qualityLabel, isNull);
       expect(const StreamInfo().isEmpty, isTrue);
     });
 
-    test('paliers de qualité', () {
-      expect(const StreamInfo(height: 2160).qualityLabel, '4K');
-      expect(const StreamInfo(height: 720).qualityLabel, 'HD 720p');
-      expect(const StreamInfo(height: 576).qualityLabel, 'SD 576p');
+    test('paliers de résolution, y compris les flux au format cinéma', () {
+      expect(VideoResolution.of(720, 576), VideoResolution.sd);
+      expect(VideoResolution.of(1280, 720), VideoResolution.hd);
+      expect(VideoResolution.of(1920, 1080), VideoResolution.fullHd);
+      expect(VideoResolution.of(2560, 1440), VideoResolution.qhd);
+      expect(VideoResolution.of(3840, 2160), VideoResolution.uhd);
+      expect(VideoResolution.of(3840, 1608), VideoResolution.uhd);
+      expect(VideoResolution.of(1920, 800), VideoResolution.fullHd);
+      expect(VideoResolution.of(0, 0), isNull);
+    });
+
+    test('fps arrondis, valeurs invraisemblables ignorées', () {
+      expect(FrameRate.of(59.94)?.label, '60 fps');
+      expect(FrameRate.of(1), isNull);
+      expect(FrameRate.of(double.nan), isNull);
+    });
+
+    test('qualité à mémoriser pour la chaîne', () {
+      expect(channelQualityOf(const StreamInfo(width: 3840, height: 2160, fps: 50))?.label, '4K · 50 fps');
+      expect(channelQualityOf(const StreamInfo(width: 1920, height: 1080))?.label, '1080p');
+      expect(channelQualityOf(const StreamInfo(fps: 25)), isNull);
     });
   });
 

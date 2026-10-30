@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../channel_quality/presentation/channel_qualities_controller.dart';
 import '../../live_tv/domain/channel.dart';
+import '../domain/stream_info.dart';
 import 'player_session.dart';
 import 'player_view.dart';
 import 'widgets/player_controls.dart';
@@ -17,34 +21,59 @@ final playerPanelBuilderProvider = Provider<PlayerPanelBuilder>(
 );
 
 /// Lecteur vidéo intégré (libmpv via media_kit) : gère le flux, l'affichage est délégué à [PlayerView].
-class PlayerPanel extends StatefulWidget {
+class PlayerPanel extends ConsumerStatefulWidget {
   const PlayerPanel({super.key, required this.channel, required this.onClose});
 
   final Channel channel;
   final VoidCallback onClose;
 
   @override
-  State<PlayerPanel> createState() => _PlayerPanelState();
+  ConsumerState<PlayerPanel> createState() => _PlayerPanelState();
 }
 
-class _PlayerPanelState extends State<PlayerPanel> {
+class _PlayerPanelState extends ConsumerState<PlayerPanel> {
+  /// Une chaîne réellement regardée (pas seulement zappée) mémorise sa qualité, comme sur Android.
+  static const qualityAfter = Duration(seconds: 10);
+
   final _session = PlayerSession();
   late final VideoController _video = VideoController(_session.player);
+  Timer? _qualityTimer;
+  bool _watched = false;
 
   @override
   void initState() {
     super.initState();
-    _session.open(widget.channel.streamUrl);
+    _session.addListener(_saveQuality);
+    _open();
   }
 
   @override
   void didUpdateWidget(PlayerPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.channel.streamUrl != widget.channel.streamUrl) _session.open(widget.channel.streamUrl);
+    if (oldWidget.channel.streamUrl != widget.channel.streamUrl) _open();
+  }
+
+  void _open() {
+    _qualityTimer?.cancel();
+    _watched = false;
+    _qualityTimer = Timer(qualityAfter, () {
+      _watched = true;
+      _saveQuality();
+    });
+    _session.open(widget.channel.streamUrl);
+  }
+
+  /// Mémorise la qualité affichée sur la tuile, puis la tient à jour si le flux s'adapte.
+  void _saveQuality() {
+    if (!_watched || !mounted) return;
+    final quality = channelQualityOf(_session.info);
+    if (quality != null) ref.read(channelQualitiesProvider.notifier).save(widget.channel.id, quality);
   }
 
   @override
   void dispose() {
+    _qualityTimer?.cancel();
+    _session.removeListener(_saveQuality);
     _session.dispose();
     super.dispose();
   }
