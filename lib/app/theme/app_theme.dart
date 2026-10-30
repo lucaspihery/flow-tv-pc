@@ -19,6 +19,27 @@ class AppColors {
   static const favorite = Color(0xFFFFC94D);
 
   static const brandGradient = LinearGradient(colors: [cyan, blue, violet, magenta]);
+
+  /// Dégradé des boutons et sélections : plus sobre que le dégradé complet.
+  static const actionGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [blue, violet],
+  );
+
+  /// Fond des panneaux (barre latérale, cartes).
+  static const panelGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF0E0F4E), Color(0xFF080935)],
+  );
+
+  /// Fond des tuiles.
+  static const tileGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF14165A), Color(0xFF0B0C42)],
+  );
 }
 
 ThemeData buildTheme() {
@@ -48,5 +69,20 @@ ThemeData buildTheme() {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
     dialogTheme: const DialogThemeData(backgroundColor: AppColors.surface),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected) ? AppColors.accent.withValues(alpha: 0.35) : Colors.transparent,
+        ),
+        foregroundColor: const WidgetStatePropertyAll(Colors.white),
+        side: WidgetStatePropertyAll(BorderSide(color: AppColors.violet.withValues(alpha: 0.5))),
+        padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 14)),
+      ),
+    ),
+    scrollbarTheme: ScrollbarThemeData(
+      thumbColor: WidgetStatePropertyAll(AppColors.violet.withValues(alpha: 0.5)),
+      radius: const Radius.circular(8),
+    ),
   );
 }
