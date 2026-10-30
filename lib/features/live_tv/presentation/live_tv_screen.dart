@@ -52,7 +52,10 @@ class _ChannelsView extends ConsumerWidget {
             if (current != null) ...[
               SizedBox(
                 height: constraints.maxHeight * 0.55,
-                child: PlayerPanel(channel: current, onClose: () => ref.read(currentChannelProvider.notifier).stop()),
+                child: ref.watch(playerPanelBuilderProvider)(
+                  current,
+                  () => ref.read(currentChannelProvider.notifier).stop(),
+                ),
               ),
               const SizedBox(height: 20),
             ],

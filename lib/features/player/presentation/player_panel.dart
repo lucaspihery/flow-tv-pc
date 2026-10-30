@@ -4,12 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-import '../../favorites/presentation/widgets/favorite_button.dart';
-import '../../live_tv/domain/channel.dart';
-import '../../../app/theme/app_theme.dart';
-import '../../live_tv/presentation/widgets/channel_logo.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Lecteur vidéo intégré (libmpv via media_kit).
+import '../../live_tv/domain/channel.dart';
+import 'player_view.dart';
+
+/// Construit le lecteur d'une chaîne. Surchargeable dans les tests, où libmpv n'est pas disponible.
+typedef PlayerPanelBuilder = Widget Function(Channel channel, VoidCallback onClose);
+
+final playerPanelBuilderProvider = Provider<PlayerPanelBuilder>(
+  (ref) =>
+      (channel, onClose) => PlayerPanel(channel: channel, onClose: onClose),
+);
+
+/// Lecteur vidéo intégré (libmpv via media_kit) : gère le flux, l'affichage est délégué à [PlayerView].
 class PlayerPanel extends StatefulWidget {
   const PlayerPanel({super.key, required this.channel, required this.onClose});
 
@@ -55,127 +63,15 @@ class _PlayerPanelState extends State<PlayerPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.violet.withValues(alpha: 0.35)),
-        boxShadow: [
-          BoxShadow(color: AppColors.blue.withValues(alpha: 0.25), blurRadius: 40, offset: const Offset(0, 12)),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Video(controller: _video),
-                StreamBuilder<bool>(
-                  stream: _player.stream.buffering,
-                  builder: (context, snapshot) => snapshot.data == true && _error == null
-                      ? const Center(child: CircularProgressIndicator())
-                      : const SizedBox.shrink(),
-                ),
-                if (_error != null) _ErrorOverlay(message: _error!, onRetry: _open),
-              ],
-            ),
-          ),
-          Container(
-            decoration: const BoxDecoration(gradient: AppColors.panelGradient),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                ChannelLogo(channel: widget.channel, size: 32),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.channel.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        widget.channel.group,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                const _LiveBadge(),
-                const SizedBox(width: 8),
-                FavoriteButton(channel: widget.channel),
-                IconButton(tooltip: 'Recharger le flux', icon: const Icon(Icons.refresh), onPressed: _open),
-                IconButton(tooltip: 'Fermer le lecteur', icon: const Icon(Icons.close), onPressed: widget.onClose),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorOverlay extends StatelessWidget {
-  const _ErrorOverlay({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Colors.black87,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 40, color: Colors.redAccent),
-              const SizedBox(height: 12),
-              const Text('Impossible de lire ce flux', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 6),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Réessayer')),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LiveBadge extends StatelessWidget {
-  const _LiveBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [AppColors.magenta, AppColors.violet]),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.circle, size: 8, color: Colors.white),
-          SizedBox(width: 6),
-          Text('EN DIRECT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-        ],
+    return StreamBuilder<bool>(
+      stream: _player.stream.buffering,
+      builder: (context, snapshot) => PlayerView(
+        channel: widget.channel,
+        video: Video(controller: _video),
+        buffering: snapshot.data ?? false,
+        error: _error,
+        onRetry: _open,
+        onClose: widget.onClose,
       ),
     );
   }
