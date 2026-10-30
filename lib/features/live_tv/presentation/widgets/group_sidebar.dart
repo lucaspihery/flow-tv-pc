@@ -18,54 +18,57 @@ class GroupSidebar extends ConsumerWidget {
     final counts = ref.watch(groupCountsProvider);
     final selected = ref.watch(selectedGroupProvider);
 
-    return Container(
-      width: 260,
+    // Material (et non Container) pour que les ListTile puissent peindre leur fond de sélection.
+    return Material(
       color: AppColors.surface,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-            child: Row(
-              children: [
-                const BrandMark(size: 36),
-                const SizedBox(width: 12),
-                const GradientText('Flow TV', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-              ],
+      child: SizedBox(
+        width: 260,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              child: Row(
+                children: [
+                  const BrandMark(size: 36),
+                  const SizedBox(width: 12),
+                  const GradientText('Flow TV', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                ],
+              ),
             ),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
-            child: Text('CATÉGORIES', style: TextStyle(color: AppColors.textMuted, fontSize: 11, letterSpacing: 1.2)),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              itemCount: groups.length,
-              itemBuilder: (context, i) {
-                final group = groups[i];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: ListTile(
-                    dense: true,
-                    selected: group == selected,
-                    selectedColor: Colors.white,
-                    selectedTileColor: accent.withValues(alpha: 0.25),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    title: Text(group, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    trailing: Text(
-                      '${counts[group] ?? 0}',
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
+              child: Text('CATÉGORIES', style: TextStyle(color: AppColors.textMuted, fontSize: 11, letterSpacing: 1.2)),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                itemCount: groups.length,
+                itemBuilder: (context, i) {
+                  final group = groups[i];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: ListTile(
+                      dense: true,
+                      selected: group == selected,
+                      selectedColor: Colors.white,
+                      selectedTileColor: accent.withValues(alpha: 0.25),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      title: Text(group, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      trailing: Text(
+                        '${counts[group] ?? 0}',
+                        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                      ),
+                      onTap: () => ref.read(selectedGroupProvider.notifier).select(group),
                     ),
-                    onTap: () => ref.read(selectedGroupProvider.notifier).select(group),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          const _AccountTile(),
-        ],
+            const Divider(height: 1),
+            const _AccountTile(),
+          ],
+        ),
       ),
     );
   }
