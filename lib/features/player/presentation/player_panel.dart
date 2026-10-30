@@ -56,7 +56,14 @@ class _PlayerPanelState extends State<PlayerPanel> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.violet.withValues(alpha: 0.35)),
+        boxShadow: [
+          BoxShadow(color: AppColors.blue.withValues(alpha: 0.25), blurRadius: 40, offset: const Offset(0, 12)),
+        ],
+      ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
@@ -76,7 +83,7 @@ class _PlayerPanelState extends State<PlayerPanel> {
             ),
           ),
           Container(
-            color: AppColors.surface,
+            decoration: const BoxDecoration(gradient: AppColors.panelGradient),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
@@ -102,6 +109,8 @@ class _PlayerPanelState extends State<PlayerPanel> {
                     ],
                   ),
                 ),
+                const _LiveBadge(),
+                const SizedBox(width: 8),
                 FavoriteButton(channel: widget.channel),
                 IconButton(tooltip: 'Recharger le flux', icon: const Icon(Icons.refresh), onPressed: _open),
                 IconButton(tooltip: 'Fermer le lecteur', icon: const Icon(Icons.close), onPressed: widget.onClose),
@@ -144,6 +153,29 @@ class _ErrorOverlay extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _LiveBadge extends StatelessWidget {
+  const _LiveBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [AppColors.magenta, AppColors.violet]),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, size: 8, color: Colors.white),
+          SizedBox(width: 6),
+          Text('EN DIRECT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+        ],
       ),
     );
   }
