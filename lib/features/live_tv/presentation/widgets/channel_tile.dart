@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/channel.dart';
-import '../theme.dart';
+import '../../domain/channel.dart';
+import '../../../../app/theme/app_theme.dart';
 import 'channel_logo.dart';
 
 class ChannelTile extends StatefulWidget {

@@ -1,4 +1,4 @@
-import '../models/channel.dart';
+import '../../domain/channel.dart';
 
 /// Parseur de playlists M3U / M3U8 « étendues » (format IPTV classique).
 ///
@@ -8,6 +8,8 @@ import '../models/channel.dart';
 /// http://exemple.com/tf1.m3u8
 /// ```
 class M3uParser {
+  const M3uParser._();
+
   static final _attribute = RegExp(r'([\w-]+)="([^"]*)"');
 
   static List<Channel> parse(String content) {
@@ -32,14 +34,13 @@ class M3uParser {
         // #EXTM3U, #EXTVLCOPT, etc. : ignorés.
         continue;
       } else if (attributes != null) {
-        final group = _firstNonEmpty([attributes['group-title'], extGroup]) ?? Channel.defaultGroup;
         channels.add(
           Channel(
+            id: _firstNonEmpty([attributes['tvg-id']]) ?? line,
             name: _firstNonEmpty([name, attributes['tvg-name']]) ?? line,
-            url: line,
-            logo: _firstNonEmpty([attributes['tvg-logo']]),
-            group: group,
-            tvgId: _firstNonEmpty([attributes['tvg-id']]),
+            streamUrl: line,
+            logoUrl: _firstNonEmpty([attributes['tvg-logo']]),
+            group: _firstNonEmpty([attributes['group-title'], extGroup]) ?? Channel.defaultGroup,
           ),
         );
         attributes = null;
@@ -54,19 +55,16 @@ class M3uParser {
   /// (les attributs la précèdent, le nom peut lui-même contenir des virgules).
   static String? _extractName(String line) {
     var inQuotes = false;
-    var comma = -1;
     for (var i = 0; i < line.length; i++) {
       final c = line[i];
       if (c == '"') {
         inQuotes = !inQuotes;
       } else if (c == ',' && !inQuotes) {
-        comma = i;
-        break;
+        final name = line.substring(i + 1).trim();
+        return name.isEmpty ? null : name;
       }
     }
-    if (comma == -1) return null;
-    final name = line.substring(comma + 1).trim();
-    return name.isEmpty ? null : name;
+    return null;
   }
 
   static String? _firstNonEmpty(List<String?> values) {

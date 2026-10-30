@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-import '../models/channel.dart';
-import '../theme.dart';
-import 'channel_logo.dart';
+import '../../live_tv/domain/channel.dart';
+import '../../../app/theme/app_theme.dart';
+import '../../live_tv/presentation/widgets/channel_logo.dart';
 
 /// Lecteur vidéo intégré (libmpv via media_kit).
 class PlayerPanel extends StatefulWidget {
@@ -37,12 +37,12 @@ class _PlayerPanelState extends State<PlayerPanel> {
   @override
   void didUpdateWidget(PlayerPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.channel.url != widget.channel.url) _open();
+    if (oldWidget.channel.streamUrl != widget.channel.streamUrl) _open();
   }
 
   void _open() {
     setState(() => _error = null);
-    _player.open(Media(widget.channel.url));
+    _player.open(Media(widget.channel.streamUrl));
   }
 
   @override

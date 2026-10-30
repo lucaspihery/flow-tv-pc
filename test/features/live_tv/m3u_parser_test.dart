@@ -1,5 +1,5 @@
-import 'package:flow_tv/models/channel.dart';
-import 'package:flow_tv/services/m3u_parser.dart';
+import 'package:flow_tv/features/live_tv/domain/channel.dart';
+import 'package:flow_tv/features/live_tv/data/m3u/m3u_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -20,12 +20,12 @@ void main() {
     expect(channels, hasLength(3));
     expect(channels[0].name, 'TF1 HD');
     expect(channels[0].group, 'France');
-    expect(channels[0].logo, 'https://logo/tf1.png');
-    expect(channels[0].tvgId, 'tf1.fr');
-    expect(channels[0].url, 'http://exemple.com/tf1.m3u8');
+    expect(channels[0].logoUrl, 'https://logo/tf1.png');
+    expect(channels[0].id, 'tf1.fr');
+    expect(channels[0].streamUrl, 'http://exemple.com/tf1.m3u8');
     expect(channels[1].name, 'Sport, Live');
     expect(channels[1].group, Channel.defaultGroup);
-    expect(channels[1].logo, isNull);
+    expect(channels[1].logoUrl, isNull);
     expect(channels[2].group, 'Films');
   });
 

@@ -1,46 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'screens/home_screen.dart';
-import 'services/channel_controller.dart';
-import 'services/playlist_service.dart';
-import 'theme.dart';
+import 'app/app.dart';
+import 'core/storage/preferences.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
-  runApp(const FlowTvApp());
-}
+  final prefs = await SharedPreferences.getInstance();
 
-class FlowTvApp extends StatefulWidget {
-  const FlowTvApp({super.key});
-
-  @override
-  State<FlowTvApp> createState() => _FlowTvAppState();
-}
-
-class _FlowTvAppState extends State<FlowTvApp> {
-  final _controller = ChannelController(PlaylistService());
-
-  @override
-  void initState() {
-    super.initState();
-    _controller.restoreLastPlaylist();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flow TV',
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(),
-      home: HomeScreen(controller: _controller),
-    );
-  }
+  runApp(
+    ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      // Pas de nouvelle tentative automatique : les erreurs sont affichées avec un bouton « Réessayer ».
+      retry: (_, _) => null,
+      child: const FlowTvApp(),
+    ),
+  );
 }

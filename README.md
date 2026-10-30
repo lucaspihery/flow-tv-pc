@@ -4,11 +4,12 @@ Application IPTV pour Windows, écrite en Flutter, avec lecteur vidéo intégré
 
 ## Fonctionnalités
 
-- Chargement d'une playlist M3U / M3U8 depuis une **URL** ou un **fichier local**
-- Lecture des infos de chaque chaîne : nom, logo (`tvg-logo`), catégorie (`group-title` ou `#EXTGRP`)
-- Grille des chaînes avec **catégories** dans la barre latérale et **recherche** instantanée
+- **Deux modes de connexion** :
+  - **Xtream Codes** : URL du serveur, nom d'utilisateur et mot de passe (vérifiés auprès du serveur)
+  - **Playlist M3U** : par URL ou en ouvrant un fichier local
+- Le compte est mémorisé : l'application s'ouvre directement sur les chaînes au lancement suivant, avec un bouton de déconnexion
+- Catégories dans la barre latérale, grille des chaînes avec logos et **recherche** instantanée
 - **Lecteur intégré** basé sur [media_kit](https://pub.dev/packages/media_kit) (libmpv) : HLS, MPEG-TS, etc., avec contrôles, plein écran et bouton « Réessayer » en cas d'erreur
-- La dernière playlist est mémorisée et rechargée au démarrage
 - Interface sombre moderne
 
 ## Prérequis
@@ -51,20 +52,42 @@ Le résultat se trouve dans `build\windows\x64\runner\Release\`. Il faut distrib
 
 Chaque push sur `main` lance aussi un build Windows sur GitHub Actions : le dossier prêt à l'emploi est téléchargeable dans l'onglet **Actions** du dépôt (artefact `flow-tv-windows`).
 
-## Structure du code
+## Architecture
+
+Le code est organisé **par fonctionnalité** (feature-first), chaque fonctionnalité séparant ses couches :
+
+- `domain` : modèles et contrats métier, sans dépendance à Flutter
+- `data` : accès aux sources (API Xtream, fichiers/URL M3U) et implémentations des dépôts
+- `presentation` : écrans, widgets et état (Riverpod)
 
 ```
 lib/
-  main.dart                     Point d'entrée (initialise media_kit)
-  theme.dart                    Thème sombre et couleurs
-  models/channel.dart           Modèle d'une chaîne
-  services/m3u_parser.dart      Parseur M3U
-  services/playlist_service.dart  Chargement URL/fichier + mémorisation
-  services/channel_controller.dart  État : groupes, recherche, chaîne en cours
-  screens/home_screen.dart      Écran principal
-  widgets/                      Barre latérale, tuiles, lecteur, dialogue de playlist
-test/m3u_parser_test.dart       Tests du parseur
+  main.dart                         Point d'entrée : media_kit, préférences, ProviderScope
+  app/
+    app.dart                        MaterialApp, choix connexion / chaînes selon le compte
+    theme/app_theme.dart            Thème sombre et couleurs
+  core/
+    errors/app_exception.dart       Erreurs métier affichables (réseau, auth, format)
+    network/http_service.dart       Client HTTP (user-agent, délai, erreurs lisibles)
+    storage/preferences.dart        Accès à SharedPreferences
+  features/
+    auth/                           Connexion
+      domain/iptv_account.dart      Compte : XtreamAccount | M3uAccount
+      data/account_storage.dart     Mémorisation du compte
+      presentation/                 AuthController, LoginScreen, formulaires Xtream et M3U
+    live_tv/                        TV en direct
+      domain/                       Channel, ChannelRepository (interface)
+      data/m3u/                     Parseur M3U + dépôt M3U
+      data/xtream/                  Client API Xtream, modèles, dépôt Xtream
+      presentation/                 Providers (filtres, chaîne en cours), écran, widgets
+    player/
+      presentation/player_panel.dart  Lecteur vidéo media_kit
+test/                               Tests unitaires et widget, même arborescence que lib/
 ```
+
+**Gestion d'état** : [Riverpod](https://riverpod.dev). `authControllerProvider` contient le compte connecté ; `channelRepositoryProvider` choisit automatiquement l'implémentation Xtream ou M3U ; l'écran ne connaît que l'interface `ChannelRepository`. Pour ajouter une source (VOD, séries, EPG…), il suffit d'ajouter une fonctionnalité ou une implémentation sans toucher aux écrans existants.
+
+> Le mot de passe Xtream est stocké localement dans les préférences de l'application (non chiffré).
 
 ## Tests
 

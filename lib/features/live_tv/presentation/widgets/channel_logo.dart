@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/channel.dart';
-import '../theme.dart';
+import '../../domain/channel.dart';
+import '../../../../app/theme/app_theme.dart';
 
 /// Logo de la chaîne, avec les initiales en repli si l'image est absente ou cassée.
 class ChannelLogo extends StatelessWidget {
@@ -13,7 +13,7 @@ class ChannelLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = _Initials(name: channel.name, size: size);
-    final logo = channel.logo;
+    final logo = channel.logoUrl;
     return SizedBox.square(
       dimension: size,
       child: ClipRRect(
