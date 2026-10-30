@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_theme.dart';
+import '../../../app/widgets/brand.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../player/presentation/player_panel.dart';
 import 'live_tv_providers.dart';
@@ -125,6 +126,8 @@ class _Loading extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          BrandMark(size: 96),
+          SizedBox(height: 24),
           CircularProgressIndicator(),
           SizedBox(height: 16),
           Text('Chargement des chaînes…', style: TextStyle(color: AppColors.textMuted)),

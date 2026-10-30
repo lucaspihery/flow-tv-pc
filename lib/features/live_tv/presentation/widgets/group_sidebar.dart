@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_theme.dart';
+import '../../../../app/widgets/brand.dart';
 import '../../../auth/domain/iptv_account.dart';
 import '../../../auth/presentation/auth_controller.dart';
 import '../live_tv_providers.dart';
@@ -27,9 +28,9 @@ class GroupSidebar extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
             child: Row(
               children: [
-                Icon(Icons.live_tv_rounded, color: accent, size: 28),
-                const SizedBox(width: 10),
-                const Text('Flow TV', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                const BrandMark(size: 36),
+                const SizedBox(width: 12),
+                const GradientText('Flow TV', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
               ],
             ),
           ),

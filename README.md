@@ -65,7 +65,8 @@ lib/
   main.dart                         Point d'entrée : media_kit, préférences, ProviderScope
   app/
     app.dart                        MaterialApp, choix connexion / chaînes selon le compte
-    theme/app_theme.dart            Thème sombre et couleurs
+    theme/app_theme.dart            Thème sombre et couleurs du logo
+    widgets/brand.dart              Logos (BrandMark, BrandBanner) et texte en dégradé
   core/
     errors/app_exception.dart       Erreurs métier affichables (réseau, auth, format)
     network/http_service.dart       Client HTTP (user-agent, délai, erreurs lisibles)
@@ -82,6 +83,7 @@ lib/
       presentation/                 Providers (filtres, chaîne en cours), écran, widgets
     player/
       presentation/player_panel.dart  Lecteur vidéo media_kit
+assets/images/                      Logos : carré, horizontal (bannière) et sans fond
 test/                               Tests unitaires et widget, même arborescence que lib/
 ```
 

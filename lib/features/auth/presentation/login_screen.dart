@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_theme.dart';
+import '../../../app/widgets/brand.dart';
 import 'widgets/m3u_login_form.dart';
 import 'widgets/xtream_login_form.dart';
 
@@ -19,24 +20,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
+            constraints: const BoxConstraints(maxWidth: 520),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.live_tv_rounded, size: 64, color: accent),
-                const SizedBox(height: 12),
-                const Text(
-                  'Flow TV',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 6),
+                const BrandBanner(),
+                const SizedBox(height: 20),
                 const Text(
                   'Connectez-vous à votre fournisseur IPTV',
                   textAlign: TextAlign.center,

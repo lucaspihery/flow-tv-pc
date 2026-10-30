@@ -9,7 +9,9 @@ void main() {
   testWidgets('sans compte enregistré, affiche la connexion et bascule entre Xtream et M3U', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
-    tester.view.physicalSize = const Size(1440, 900);
+    tester.view
+      ..physicalSize = const Size(1440, 900)
+      ..devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
     await tester.pumpWidget(

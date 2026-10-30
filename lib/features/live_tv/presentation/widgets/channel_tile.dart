@@ -20,7 +20,7 @@ class _ChannelTileState extends State<ChannelTile> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
+    const accent = AppColors.cyan;
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
