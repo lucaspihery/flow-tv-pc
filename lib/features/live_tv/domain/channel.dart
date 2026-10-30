@@ -11,6 +11,7 @@ class Channel {
   static const defaultGroup = 'Sans catégorie';
 
   /// Identifiant stable dans la source (stream_id Xtream, ou URL du flux en M3U).
+  /// Sert de clé pour les favoris.
   final String id;
   final String name;
   final String streamUrl;

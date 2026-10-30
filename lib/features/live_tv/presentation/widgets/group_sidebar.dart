@@ -7,16 +7,13 @@ import '../../../auth/domain/iptv_account.dart';
 import '../../../auth/presentation/auth_controller.dart';
 import '../live_tv_providers.dart';
 
-/// Barre latérale : logo, catégories et compte connecté.
+/// Barre latérale : logo, toutes les chaînes, favoris, catégories et compte connecté.
 class GroupSidebar extends ConsumerWidget {
   const GroupSidebar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accent = Theme.of(context).colorScheme.primary;
     final groups = ref.watch(groupsProvider);
-    final counts = ref.watch(groupCountsProvider);
-    final selected = ref.watch(selectedGroupProvider);
 
     // Material (et non Container) pour que les ListTile puissent peindre leur fond de sélection.
     return Material(
@@ -26,49 +23,69 @@ class GroupSidebar extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 24, 20, 16),
               child: Row(
                 children: [
-                  const BrandMark(size: 36),
-                  const SizedBox(width: 12),
-                  const GradientText('Flow TV', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                  BrandMark(size: 36),
+                  SizedBox(width: 12),
+                  Text(
+                    'Flow TV',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+                  ),
                 ],
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
-              child: Text('CATÉGORIES', style: TextStyle(color: AppColors.textMuted, fontSize: 11, letterSpacing: 1.2)),
-            ),
             Expanded(
-              child: ListView.builder(
+              child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                itemCount: groups.length,
-                itemBuilder: (context, i) {
-                  final group = groups[i];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: ListTile(
-                      dense: true,
-                      selected: group == selected,
-                      selectedColor: Colors.white,
-                      selectedTileColor: accent.withValues(alpha: 0.25),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      title: Text(group, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      trailing: Text(
-                        '${counts[group] ?? 0}',
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-                      ),
-                      onTap: () => ref.read(selectedGroupProvider.notifier).select(group),
+                children: [
+                  const _GroupTile(allChannelsGroup, icon: Icons.apps_rounded),
+                  const _GroupTile(favoritesGroup, icon: Icons.star_rounded, iconColor: AppColors.favorite),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(10, 16, 10, 8),
+                    child: Text(
+                      'CATÉGORIES',
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 11, letterSpacing: 1.2),
                     ),
-                  );
-                },
+                  ),
+                  for (final group in groups) _GroupTile(group),
+                ],
               ),
             ),
             const Divider(height: 1),
             const _AccountTile(),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _GroupTile extends ConsumerWidget {
+  const _GroupTile(this.group, {this.icon, this.iconColor});
+
+  final String group;
+  final IconData? icon;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(selectedGroupProvider) == group;
+    final count = ref.watch(groupCountsProvider.select((counts) => counts[group] ?? 0));
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: ListTile(
+        dense: true,
+        selected: selected,
+        selectedColor: Colors.white,
+        selectedTileColor: AppColors.accent.withValues(alpha: 0.25),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        leading: icon == null ? null : Icon(icon, size: 20, color: iconColor),
+        minLeadingWidth: 20,
+        title: Text(group, maxLines: 1, overflow: TextOverflow.ellipsis),
+        trailing: Text('$count', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+        onTap: () => ref.read(selectedGroupProvider.notifier).select(group),
       ),
     );
   }
@@ -82,8 +99,13 @@ class _AccountTile extends ConsumerWidget {
     final account = ref.watch(authControllerProvider);
     if (account == null) return const SizedBox.shrink();
     return ListTile(
-      contentPadding: const EdgeInsets.fromLTRB(20, 6, 8, 6),
-      leading: Icon(account is XtreamAccount ? Icons.dns : Icons.playlist_play, color: AppColors.textMuted),
+      contentPadding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: const BoxDecoration(shape: BoxShape.circle, gradient: AppColors.brandGradient),
+        child: const Icon(Icons.person_rounded, color: Colors.white, size: 24),
+      ),
       title: Text(account.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
         account is XtreamAccount ? 'Xtream Codes' : 'Playlist M3U',

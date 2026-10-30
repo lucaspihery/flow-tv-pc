@@ -8,6 +8,7 @@ Application IPTV pour Windows, écrite en Flutter, avec lecteur vidéo intégré
   - **Xtream Codes** : URL du serveur, nom d'utilisateur et mot de passe (vérifiés auprès du serveur)
   - **Playlist M3U** : par URL ou en ouvrant un fichier local
 - Le compte est mémorisé : l'application s'ouvre directement sur les chaînes au lancement suivant, avec un bouton de déconnexion
+- **Favoris** : étoile sur chaque chaîne (au survol) et dans le lecteur, section « Favoris » dans la barre latérale, enregistrés par compte
 - Catégories dans la barre latérale, grille des chaînes avec logos et **recherche** instantanée
 - **Lecteur intégré** basé sur [media_kit](https://pub.dev/packages/media_kit) (libmpv) : HLS, MPEG-TS, etc., avec contrôles, plein écran et bouton « Réessayer » en cas d'erreur
 - Interface sombre moderne
@@ -81,6 +82,9 @@ lib/
       data/m3u/                     Parseur M3U + dépôt M3U
       data/xtream/                  Client API Xtream, modèles, dépôt Xtream
       presentation/                 Providers (filtres, chaîne en cours), écran, widgets
+    favorites/                      Favoris
+      data/favorites_storage.dart   Enregistrement par compte
+      presentation/                 FavoritesController, bouton étoile
     player/
       presentation/player_panel.dart  Lecteur vidéo media_kit
 assets/images/                      Logos : carré, horizontal (bannière) et sans fond

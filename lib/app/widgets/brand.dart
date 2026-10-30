@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
-
 /// Chemins des logos déclarés dans `pubspec.yaml`.
 class BrandAssets {
   static const logo = 'assets/images/logo.png';
@@ -41,20 +39,5 @@ class BrandBanner extends StatelessWidget {
       aspectRatio: aspectRatio,
       child: Image.asset(BrandAssets.banner, fit: BoxFit.cover, filterQuality: FilterQuality.medium),
     ),
-  );
-}
-
-/// Texte rempli avec le dégradé du logo.
-class GradientText extends StatelessWidget {
-  const GradientText(this.text, {super.key, required this.style});
-
-  final String text;
-  final TextStyle style;
-
-  @override
-  Widget build(BuildContext context) => ShaderMask(
-    blendMode: BlendMode.srcIn,
-    shaderCallback: (bounds) => AppColors.brandGradient.createShader(Offset.zero & bounds.size),
-    child: Text(text, style: style),
   );
 }

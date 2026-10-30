@@ -5,6 +5,7 @@ import 'package:flow_tv/core/storage/preferences.dart';
 import 'package:flow_tv/features/auth/domain/iptv_account.dart';
 import 'package:flow_tv/features/live_tv/domain/channel.dart';
 import 'package:flow_tv/features/live_tv/presentation/live_tv_providers.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -51,5 +52,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('France 2'), findsOneWidget);
     expect(find.text('1 chaîne'), findsOneWidget);
+
+    // Survol de la tuile puis clic sur l'étoile : la chaîne passe dans « Favoris ».
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(mouse.removePointer);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(tester.getCenter(find.text('France 2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Ajouter aux favoris'));
+    await tester.enterText(find.byType(TextField), '');
+    await tester.tap(find.text('Favoris'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 chaîne'), findsOneWidget);
+    expect(find.text('France 2'), findsOneWidget);
+    expect(find.text('TF1'), findsNothing);
   });
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
+import '../../favorites/presentation/widgets/favorite_button.dart';
 import '../../live_tv/domain/channel.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../live_tv/presentation/widgets/channel_logo.dart';
@@ -101,6 +102,7 @@ class _PlayerPanelState extends State<PlayerPanel> {
                     ],
                   ),
                 ),
+                FavoriteButton(channel: widget.channel),
                 IconButton(tooltip: 'Recharger le flux', icon: const Icon(Icons.refresh), onPressed: _open),
                 IconButton(tooltip: 'Fermer le lecteur', icon: const Icon(Icons.close), onPressed: widget.onClose),
               ],

@@ -21,7 +21,7 @@ void main() {
     expect(channels[0].name, 'TF1 HD');
     expect(channels[0].group, 'France');
     expect(channels[0].logoUrl, 'https://logo/tf1.png');
-    expect(channels[0].id, 'tf1.fr');
+    expect(channels[0].id, 'http://exemple.com/tf1.m3u8');
     expect(channels[0].streamUrl, 'http://exemple.com/tf1.m3u8');
     expect(channels[1].name, 'Sport, Live');
     expect(channels[1].group, Channel.defaultGroup);

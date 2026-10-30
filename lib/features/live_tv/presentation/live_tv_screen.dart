@@ -89,8 +89,13 @@ class _ChannelsView extends ConsumerWidget {
             ),
             Expanded(
               child: channels.isEmpty
-                  ? const Center(
-                      child: Text('Aucune chaîne ne correspond.', style: TextStyle(color: AppColors.textMuted)),
+                  ? Center(
+                      child: Text(
+                        group == favoritesGroup && ref.watch(searchQueryProvider).isEmpty
+                            ? 'Aucun favori pour l\'instant. Survolez une chaîne et cliquez sur l\'étoile pour l\'ajouter.'
+                            : 'Aucune chaîne ne correspond.',
+                        style: const TextStyle(color: AppColors.textMuted),
+                      ),
                     )
                   : GridView.builder(
                       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(

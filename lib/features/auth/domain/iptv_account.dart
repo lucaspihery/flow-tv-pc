@@ -5,6 +5,9 @@ sealed class IptvAccount {
   /// Libellé court affiché dans l'interface.
   String get displayName;
 
+  /// Identifie le compte pour les données qui lui sont propres (favoris…).
+  String get storageKey;
+
   Map<String, Object?> toJson();
 
   static IptvAccount fromJson(Map<String, Object?> json) => switch (json['type']) {
@@ -30,6 +33,9 @@ class XtreamAccount extends IptvAccount {
 
   @override
   String get displayName => '$username@${Uri.tryParse(serverUrl)?.host ?? serverUrl}';
+
+  @override
+  String get storageKey => 'xtream:$serverUrl:$username';
 
   @override
   Map<String, Object?> toJson() => {'type': type, 'serverUrl': serverUrl, 'username': username, 'password': password};
@@ -58,6 +64,9 @@ class M3uAccount extends IptvAccount {
   /// URL de la playlist ou chemin du fichier local.
   final String location;
   final bool isLocalFile;
+
+  @override
+  String get storageKey => 'm3u:$location';
 
   @override
   String get displayName => isLocalFile ? location.split(RegExp(r'[\\/]')).last : 'Playlist M3U';

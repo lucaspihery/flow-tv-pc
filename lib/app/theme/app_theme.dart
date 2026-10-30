@@ -15,6 +15,9 @@ class AppColors {
   /// Couleur d'accent principale (boutons, sélection).
   static const accent = Color(0xFF5B3BFF);
 
+  /// Étoile des favoris.
+  static const favorite = Color(0xFFFFC94D);
+
   static const brandGradient = LinearGradient(colors: [cyan, blue, violet, magenta]);
 }
 

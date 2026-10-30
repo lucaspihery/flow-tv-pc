@@ -36,7 +36,7 @@ class M3uParser {
       } else if (attributes != null) {
         channels.add(
           Channel(
-            id: _firstNonEmpty([attributes['tvg-id']]) ?? line,
+            id: line,
             name: _firstNonEmpty([name, attributes['tvg-name']]) ?? line,
             streamUrl: line,
             logoUrl: _firstNonEmpty([attributes['tvg-logo']]),
