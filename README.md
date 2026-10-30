@@ -13,6 +13,15 @@ Application IPTV pour Windows, écrite en Flutter, avec lecteur vidéo intégré
 - **Lecteur intégré** basé sur [media_kit](https://pub.dev/packages/media_kit) (libmpv) : HLS, MPEG-TS, etc., avec contrôles, plein écran et bouton « Réessayer » en cas d'erreur
 - Interface sombre moderne
 
+## Installer l'application (utilisateurs)
+
+Chaque build de `main` produit, dans l'onglet **Actions** du dépôt :
+
+- **`flow-tv-setup`** : l'installateur `FlowTV-Setup-x.y.z.exe`. Il installe Flow TV pour l'utilisateur courant sans droits administrateur, ajoute un raccourci au menu Démarrer et, si vous le souhaitez, sur le bureau. La désinstallation se fait depuis *Paramètres → Applications*.
+- **`flow-tv-windows-portable`** : la version portable, à dézipper et lancer avec `flow_tv.exe`.
+
+L'installateur n'est pas signé : au premier lancement, Windows SmartScreen peut afficher « Windows a protégé votre ordinateur ». Cliquez sur *Informations complémentaires* puis sur *Exécuter quand même*.
+
 ## Prérequis
 
 1. **Windows 10 ou 11** (64 bits).
@@ -51,7 +60,17 @@ flutter build windows --release
 
 Le résultat se trouve dans `build\windows\x64\runner\Release\`. Il faut distribuer **tout le dossier** (le `.exe` seul ne suffit pas, il a besoin des DLL à côté).
 
-Chaque push sur `main` lance aussi un build Windows sur GitHub Actions : le dossier prêt à l'emploi est téléchargeable dans l'onglet **Actions** du dépôt (artefact `flow-tv-windows`).
+Chaque push sur `main` lance aussi un build Windows sur GitHub Actions : le dossier prêt à l'emploi est téléchargeable dans l'onglet **Actions** du dépôt (artefacts `flow-tv-setup` et `flow-tv-windows-portable`).
+
+## Créer l'installateur
+
+Installez [Inno Setup 6](https://jrsoftware.org/isdl.php), puis, après `flutter build windows --release` :
+
+```powershell
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=1.0.0 installer\flow_tv.iss
+```
+
+L'installateur est créé dans `build\installer\`. Le script (`installer/flow_tv.iss`) est en français et contient le raccourci du menu Démarrer, le raccourci bureau optionnel, l'icône et le désinstallateur. La version vient du champ `version` de `pubspec.yaml`.
 
 ## Architecture
 
