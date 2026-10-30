@@ -5,6 +5,9 @@ import '../../../app/widgets/gradients.dart';
 import '../../favorites/presentation/widgets/favorite_button.dart';
 import '../../live_tv/domain/channel.dart';
 import '../../live_tv/presentation/widgets/channel_logo.dart';
+import '../domain/stream_info.dart';
+import '../domain/timeshift_window.dart';
+import 'widgets/player_controls.dart';
 
 /// Habillage du lecteur : image vidéo, chargement, erreur et barre d'informations.
 class PlayerView extends StatelessWidget {
@@ -16,6 +19,9 @@ class PlayerView extends StatelessWidget {
     required this.onClose,
     this.buffering = false,
     this.error,
+    this.info = const StreamInfo(),
+    this.timeshift,
+    this.onGoLive,
   });
 
   final Channel channel;
@@ -24,6 +30,9 @@ class PlayerView extends StatelessWidget {
   final String? error;
   final VoidCallback onRetry;
   final VoidCallback onClose;
+  final StreamInfo info;
+  final TimeshiftWindow? timeshift;
+  final VoidCallback? onGoLive;
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +90,13 @@ class PlayerView extends StatelessWidget {
                     ],
                   ),
                 ),
-                const _LiveBadge(),
+                StreamInfoChips(info: info, detailed: false),
+                const SizedBox(width: 10),
+                LiveButton(
+                  live: timeshift?.isLive ?? true,
+                  behind: timeshift?.behindLive ?? Duration.zero,
+                  onGoLive: onGoLive,
+                ),
                 const SizedBox(width: 8),
                 FavoriteButton(channel: channel),
                 IconButton(tooltip: 'Recharger le flux', icon: const Icon(Icons.refresh), onPressed: onRetry),
@@ -125,29 +140,6 @@ class _ErrorOverlay extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _LiveBadge extends StatelessWidget {
-  const _LiveBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [AppColors.magenta, AppColors.violet]),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.circle, size: 8, color: Colors.white),
-          SizedBox(width: 6),
-          Text('EN DIRECT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-        ],
       ),
     );
   }
