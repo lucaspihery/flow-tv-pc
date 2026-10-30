@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/widgets/gradients.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../auth_controller.dart';
 import 'login_error.dart';
@@ -96,12 +97,11 @@ class _XtreamLoginFormState extends ConsumerState<XtreamLoginForm> {
             ),
             if (_error != null) ...[const SizedBox(height: 16), LoginError(_error!)],
             const SizedBox(height: 20),
-            FilledButton(
-              onPressed: _loading ? null : _submit,
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 18)),
-              child: _loading
-                  ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Se connecter'),
+            GradientButton(
+              onPressed: _submit,
+              loading: _loading,
+              icon: Icons.login_rounded,
+              child: const Text('Se connecter'),
             ),
           ],
         ),

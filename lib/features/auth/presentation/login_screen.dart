@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../app/widgets/brand.dart';
+import '../../../app/widgets/gradients.dart';
 import 'widgets/m3u_login_form.dart';
 import 'widgets/xtream_login_form.dart';
 
@@ -21,53 +22,67 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const BrandBanner(),
-                const SizedBox(height: 20),
-                const Text(
-                  'Connectez-vous à votre fournisseur IPTV',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.textMuted),
-                ),
-                const SizedBox(height: 32),
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(20)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SegmentedButton<_LoginMethod>(
-                        segments: const [
-                          ButtonSegment(value: _LoginMethod.xtream, icon: Icon(Icons.dns), label: Text('Xtream Codes')),
-                          ButtonSegment(
-                            value: _LoginMethod.m3u,
-                            icon: Icon(Icons.playlist_play),
-                            label: Text('Playlist M3U'),
-                          ),
-                        ],
-                        selected: {_method},
-                        showSelectedIcon: false,
-                        onSelectionChanged: (s) => setState(() => _method = s.first),
-                      ),
-                      const SizedBox(height: 24),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child: switch (_method) {
-                          _LoginMethod.xtream => const XtreamLoginForm(key: ValueKey('xtream')),
-                          _LoginMethod.m3u => const M3uLoginForm(key: ValueKey('m3u')),
-                        },
-                      ),
-                    ],
+      body: GlowBackground(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const BrandBanner(),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Connectez-vous à votre fournisseur IPTV',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textMuted),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 32),
+                  GradientBorderBox(
+                    padding: const EdgeInsets.all(28),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.cyan.withValues(alpha: 0.7),
+                        AppColors.violet.withValues(alpha: 0.25),
+                        AppColors.magenta.withValues(alpha: 0.7),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SegmentedButton<_LoginMethod>(
+                          segments: const [
+                            ButtonSegment(
+                              value: _LoginMethod.xtream,
+                              icon: Icon(Icons.dns),
+                              label: Text('Xtream Codes'),
+                            ),
+                            ButtonSegment(
+                              value: _LoginMethod.m3u,
+                              icon: Icon(Icons.playlist_play),
+                              label: Text('Playlist M3U'),
+                            ),
+                          ],
+                          selected: {_method},
+                          showSelectedIcon: false,
+                          onSelectionChanged: (s) => setState(() => _method = s.first),
+                        ),
+                        const SizedBox(height: 24),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: switch (_method) {
+                            _LoginMethod.xtream => const XtreamLoginForm(key: ValueKey('xtream')),
+                            _LoginMethod.m3u => const M3uLoginForm(key: ValueKey('m3u')),
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

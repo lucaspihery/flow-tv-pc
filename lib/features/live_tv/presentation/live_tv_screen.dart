@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../app/widgets/brand.dart';
+import '../../../app/widgets/gradients.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../player/presentation/player_panel.dart';
 import 'live_tv_providers.dart';
@@ -17,16 +18,18 @@ class LiveTvScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final channels = ref.watch(channelsProvider);
     return Scaffold(
-      body: switch (channels) {
-        AsyncData() => const Row(
-          children: [
-            GroupSidebar(),
-            Expanded(child: _ChannelsView()),
-          ],
-        ),
-        AsyncError(:final error) => _LoadError(message: error.toString()),
-        _ => const _Loading(),
-      },
+      body: GlowBackground(
+        child: switch (channels) {
+          AsyncData() => const Row(
+            children: [
+              GroupSidebar(),
+              Expanded(child: _ChannelsView()),
+            ],
+          ),
+          AsyncError(:final error) => _LoadError(message: error.toString()),
+          _ => const _Loading(),
+        },
+      ),
     );
   }
 }
@@ -41,7 +44,7 @@ class _ChannelsView extends ConsumerWidget {
     final group = ref.watch(selectedGroupProvider);
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(28, 24, 28, 0),
       child: LayoutBuilder(
         builder: (context, constraints) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -49,17 +52,42 @@ class _ChannelsView extends ConsumerWidget {
             if (current != null) ...[
               SizedBox(
                 height: constraints.maxHeight * 0.55,
-                child: PlayerPanel(channel: current, onClose: () => ref.read(currentChannelProvider.notifier).stop()),
+                child: ref.watch(playerPanelBuilderProvider)(
+                  current,
+                  () => ref.read(currentChannelProvider.notifier).stop(),
+                ),
               ),
               const SizedBox(height: 20),
             ],
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    group,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              group,
+                              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          _CountChip(count: channels.length),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 48,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          gradient: AppColors.brandGradient,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 IconButton(
@@ -71,22 +99,22 @@ class _ChannelsView extends ConsumerWidget {
                 SizedBox(
                   width: 320,
                   child: TextField(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Rechercher une chaîne…',
-                      prefixIcon: Icon(Icons.search),
+                      prefixIcon: const Icon(Icons.search),
+                      fillColor: Colors.white.withValues(alpha: 0.06),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(color: AppColors.cyan, width: 1.5),
+                      ),
                     ),
                     onChanged: (q) => ref.read(searchQueryProvider.notifier).set(q),
                   ),
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                '${channels.length} chaîne${channels.length > 1 ? 's' : ''}',
-                style: const TextStyle(color: AppColors.textMuted),
-              ),
-            ),
+            const SizedBox(height: 12),
             Expanded(
               child: channels.isEmpty
                   ? Center(
@@ -98,11 +126,13 @@ class _ChannelsView extends ConsumerWidget {
                       ),
                     )
                   : GridView.builder(
+                      // Marge pour que l'agrandissement au survol et le halo ne soient pas rognés.
+                      padding: const EdgeInsets.fromLTRB(4, 12, 4, 24),
                       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent: 170,
                         mainAxisExtent: 150,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
                       ),
                       itemCount: channels.length,
                       itemBuilder: (context, i) {
@@ -171,10 +201,10 @@ class _LoadError extends ConsumerWidget {
             Wrap(
               spacing: 12,
               children: [
-                FilledButton.icon(
+                GradientButton(
                   onPressed: () => ref.invalidate(channelsProvider),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Réessayer'),
+                  icon: Icons.refresh,
+                  child: const Text('Réessayer'),
                 ),
                 OutlinedButton.icon(
                   onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
@@ -185,6 +215,28 @@ class _LoadError extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CountChip extends StatelessWidget {
+  const _CountChip({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.violet.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        '$count chaîne${count > 1 ? 's' : ''}',
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFD5D7F5)),
       ),
     );
   }

@@ -41,12 +41,21 @@ class _Initials extends StatelessWidget {
   Widget build(BuildContext context) {
     final words = name.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).take(2);
     final initials = words.map((w) => w.characters.first.toUpperCase()).join();
+    // Teinte stable par chaîne, choisie dans la palette du logo.
+    const palette = [AppColors.cyan, AppColors.blue, AppColors.violet, AppColors.magenta];
+    final tint = palette[name.codeUnits.fold(0, (a, b) => a + b) % palette.length];
     return Container(
-      color: AppColors.surfaceHigh,
       alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [tint.withValues(alpha: 0.55), AppColors.violet.withValues(alpha: 0.25)],
+        ),
+      ),
       child: Text(
         initials,
-        style: TextStyle(fontSize: size * 0.32, fontWeight: FontWeight.w700, color: AppColors.textMuted),
+        style: TextStyle(fontSize: size * 0.32, fontWeight: FontWeight.w800, color: Colors.white),
       ),
     );
   }

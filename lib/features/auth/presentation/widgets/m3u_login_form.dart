@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/widgets/gradients.dart';
 import '../auth_controller.dart';
 import 'login_error.dart';
 
@@ -61,9 +62,9 @@ class _M3uLoginFormState extends ConsumerState<M3uLoginForm> {
         ),
         if (_error != null) ...[const SizedBox(height: 16), LoginError(_error!)],
         const SizedBox(height: 20),
-        FilledButton(
+        GradientButton(
           onPressed: _submitUrl,
-          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 18)),
+          icon: Icons.playlist_play_rounded,
           child: const Text('Charger la playlist'),
         ),
         const Padding(
