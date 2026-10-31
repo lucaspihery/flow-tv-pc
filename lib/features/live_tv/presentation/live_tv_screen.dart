@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../app/widgets/brand.dart';
 import '../../../app/widgets/gradients.dart';
+import '../../../app/widgets/smooth_scroll.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../player/presentation/player_panel.dart';
 import 'live_tv_providers.dart';
@@ -141,11 +143,24 @@ class _Header extends ConsumerWidget {
   }
 }
 
-class _ChannelGrid extends ConsumerWidget {
+class _ChannelGrid extends ConsumerStatefulWidget {
   const _ChannelGrid();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ChannelGrid> createState() => _ChannelGridState();
+}
+
+class _ChannelGridState extends ConsumerState<_ChannelGrid> {
+  final _scroll = SmoothScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final channels = ref.watch(visibleChannelsProvider);
 
     if (channels.isEmpty) {
@@ -161,6 +176,9 @@ class _ChannelGrid extends ConsumerWidget {
     }
 
     return GridView.builder(
+      controller: _scroll,
+      // Construit les tuiles un peu avant qu'elles n'apparaissent : les logos ont le temps de se charger.
+      scrollCacheExtent: const ScrollCacheExtent.pixels(600),
       // Marge pour que l'agrandissement au survol et le halo ne soient pas rognés.
       padding: const EdgeInsets.fromLTRB(4, 12, 4, 24),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
