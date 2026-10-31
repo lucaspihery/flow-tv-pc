@@ -9,6 +9,11 @@ import 'core/storage/preferences.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  // Les logos des chaînes sont nombreux mais petits (décodés en 128 px) : on en garde davantage en
+  // mémoire que les 1000 images par défaut, pour ne pas les recharger en revenant dans une catégorie.
+  PaintingBinding.instance.imageCache
+    ..maximumSize = 3000
+    ..maximumSizeBytes = 200 << 20;
   final prefs = await SharedPreferences.getInstance();
 
   runApp(

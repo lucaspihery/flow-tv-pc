@@ -15,9 +15,18 @@ class GlowBackground extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const _Glow(alignment: Alignment(-1.1, -1.2), color: AppColors.blue, opacity: 0.28),
-          const _Glow(alignment: Alignment(1.2, 1.2), color: AppColors.magenta, opacity: 0.16),
-          const _Glow(alignment: Alignment(1.0, -1.1), color: AppColors.violet, opacity: 0.14),
+          // Halos plein écran mis en cache dans leur propre calque : ils ne sont pas repeints
+          // à chaque animation (survol, chargement, lecteur) du contenu par-dessus.
+          const RepaintBoundary(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _Glow(alignment: Alignment(-1.1, -1.2), color: AppColors.blue, opacity: 0.28),
+                _Glow(alignment: Alignment(1.2, 1.2), color: AppColors.magenta, opacity: 0.16),
+                _Glow(alignment: Alignment(1.0, -1.1), color: AppColors.violet, opacity: 0.14),
+              ],
+            ),
+          ),
           child,
         ],
       ),
