@@ -103,22 +103,26 @@ class PlayerSession extends ChangeNotifier {
     final native = _native;
     if (native == null || _disposed) return;
     try {
-      final values = <String, String>{
-        for (final p in MpvStats.streamInfoProperties) p: await native.getProperty(p, waitForInitialization: false),
-      };
-      final timePos = await native.getProperty('time-pos', waitForInitialization: false);
-      final cacheState = await native.getProperty('demuxer-cache-state', waitForInitialization: false);
+      // Lectures en parallèle : une seule attente par seconde au lieu d'une par propriété.
+      const properties = [...MpvStats.streamInfoProperties, 'time-pos', 'demuxer-cache-state'];
+      final results = await Future.wait([
+        for (final p in properties) native.getProperty(p, waitForInitialization: false),
+      ]);
       if (_disposed) return;
+      final values = Map.fromIterables(properties, results);
 
-      info = MpvStats.parseStreamInfo(values);
+      final newInfo = MpvStats.parseStreamInfo(values);
       final window = MpvStats.parseTimeshift(
-        cacheStateJson: cacheState,
-        timePos: timePos,
+        cacheStateJson: values['demuxer-cache-state']!,
+        timePos: values['time-pos']!,
         earliestSeen: _earliestPosition,
       );
       if (window != null && (_earliestPosition == null || window.position < _earliestPosition!)) {
         _earliestPosition = window.position;
       }
+      // Ne reconstruit le lecteur que si quelque chose a réellement changé (rien en pause, par exemple).
+      if (newInfo == info && window == timeshift) return;
+      info = newInfo;
       timeshift = window;
       notifyListeners();
     } catch (e) {

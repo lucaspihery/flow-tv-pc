@@ -37,6 +37,12 @@ class _PlayerPanelState extends ConsumerState<PlayerPanel> {
 
   final _session = PlayerSession();
   late final VideoController _video = VideoController(_session.player);
+
+  /// Créé une seule fois : les mises à jour de la session (chaque seconde) ne reconstruisent pas la vidéo.
+  late final Widget _videoWidget = Video(
+    controller: _video,
+    controls: (state) => _MediaKitControls(state: state, session: _session),
+  );
   Timer? _qualityTimer;
   bool _watched = false;
 
@@ -84,10 +90,7 @@ class _PlayerPanelState extends ConsumerState<PlayerPanel> {
       listenable: _session,
       builder: (context, _) => PlayerView(
         channel: widget.channel,
-        video: Video(
-          controller: _video,
-          controls: (state) => _MediaKitControls(state: state, session: _session),
-        ),
+        video: _videoWidget,
         buffering: _session.buffering,
         error: _session.error,
         info: _session.info,

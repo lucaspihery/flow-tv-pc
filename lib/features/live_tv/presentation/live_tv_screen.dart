@@ -22,7 +22,7 @@ class LiveTvScreen extends ConsumerWidget {
         child: switch (channels) {
           AsyncData() => const Row(
             children: [
-              GroupSidebar(),
+              RepaintBoundary(child: GroupSidebar()),
               Expanded(child: _ChannelsView()),
             ],
           ),
@@ -34,14 +34,14 @@ class LiveTvScreen extends ConsumerWidget {
   }
 }
 
+/// Zone principale, découpée en morceaux qui ne se reconstruisent que pour ce qui les concerne :
+/// taper une recherche ne reconstruit plus le lecteur, changer de chaîne ne reconstruit plus la grille.
 class _ChannelsView extends ConsumerWidget {
   const _ChannelsView();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final channels = ref.watch(visibleChannelsProvider);
-    final current = ref.watch(currentChannelProvider);
-    final group = ref.watch(selectedGroupProvider);
+    final playing = ref.watch(currentChannelProvider.select((c) => c != null));
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(28, 24, 28, 0),
@@ -49,105 +49,135 @@ class _ChannelsView extends ConsumerWidget {
         builder: (context, constraints) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (current != null) ...[
+            if (playing) ...[
+              // Isole les repeints du lecteur (image, spinner, contrôles) du reste de l'écran.
               SizedBox(
                 height: constraints.maxHeight * 0.55,
-                child: ref.watch(playerPanelBuilderProvider)(
-                  current,
-                  () => ref.read(currentChannelProvider.notifier).stop(),
-                ),
+                child: const RepaintBoundary(child: _PlayerSlot()),
               ),
               const SizedBox(height: 20),
             ],
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              group,
-                              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          _CountChip(count: channels.length),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: 48,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.brandGradient,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Actualiser la liste',
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () => ref.invalidate(channelsProvider),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 320,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Rechercher une chaîne…',
-                      prefixIcon: const Icon(Icons.search),
-                      fillColor: Colors.white.withValues(alpha: 0.06),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: const BorderSide(color: AppColors.cyan, width: 1.5),
-                      ),
-                    ),
-                    onChanged: (q) => ref.read(searchQueryProvider.notifier).set(q),
-                  ),
-                ),
-              ],
-            ),
+            const _Header(),
             const SizedBox(height: 12),
-            Expanded(
-              child: channels.isEmpty
-                  ? Center(
-                      child: Text(
-                        group == favoritesGroup && ref.watch(searchQueryProvider).isEmpty
-                            ? 'Aucun favori pour l\'instant. Survolez une chaîne et cliquez sur l\'étoile pour l\'ajouter.'
-                            : 'Aucune chaîne ne correspond.',
-                        style: const TextStyle(color: AppColors.textMuted),
-                      ),
-                    )
-                  : GridView.builder(
-                      // Marge pour que l'agrandissement au survol et le halo ne soient pas rognés.
-                      padding: const EdgeInsets.fromLTRB(4, 12, 4, 24),
-                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 170,
-                        mainAxisExtent: 150,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
-                      itemCount: channels.length,
-                      itemBuilder: (context, i) {
-                        final channel = channels[i];
-                        return ChannelTile(
-                          channel: channel,
-                          selected: channel == current,
-                          onTap: () => ref.read(currentChannelProvider.notifier).play(channel),
-                        );
-                      },
-                    ),
-            ),
+            const Expanded(child: _ChannelGrid()),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PlayerSlot extends ConsumerWidget {
+  const _PlayerSlot();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(currentChannelProvider);
+    if (current == null) return const SizedBox.shrink();
+    return ref.watch(playerPanelBuilderProvider)(current, () => ref.read(currentChannelProvider.notifier).stop());
+  }
+}
+
+class _Header extends ConsumerWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final group = ref.watch(selectedGroupProvider);
+    final count = ref.watch(visibleChannelsProvider.select((channels) => channels.length));
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      group,
+                      style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _CountChip(count: count),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: 48,
+                height: 4,
+                decoration: BoxDecoration(gradient: AppColors.brandGradient, borderRadius: BorderRadius.circular(2)),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: 'Actualiser la liste',
+          icon: const Icon(Icons.refresh),
+          onPressed: () => ref.invalidate(channelsProvider),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 320,
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Rechercher une chaîne…',
+              prefixIcon: const Icon(Icons.search),
+              fillColor: Colors.white.withValues(alpha: 0.06),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(color: AppColors.cyan, width: 1.5),
+              ),
+            ),
+            onChanged: (q) => ref.read(searchQueryProvider.notifier).set(q),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChannelGrid extends ConsumerWidget {
+  const _ChannelGrid();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final channels = ref.watch(visibleChannelsProvider);
+
+    if (channels.isEmpty) {
+      final noFavorites = ref.watch(selectedGroupProvider) == favoritesGroup && ref.watch(searchQueryProvider).isEmpty;
+      return Center(
+        child: Text(
+          noFavorites
+              ? 'Aucun favori pour l\'instant. Survolez une chaîne et cliquez sur l\'étoile pour l\'ajouter.'
+              : 'Aucune chaîne ne correspond.',
+          style: const TextStyle(color: AppColors.textMuted),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      // Marge pour que l'agrandissement au survol et le halo ne soient pas rognés.
+      padding: const EdgeInsets.fromLTRB(4, 12, 4, 24),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 170,
+        mainAxisExtent: 150,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: channels.length,
+      itemBuilder: (context, i) {
+        final channel = channels[i];
+        return ChannelTile(
+          key: ValueKey(channel.id),
+          channel: channel,
+          onTap: () => ref.read(currentChannelProvider.notifier).play(channel),
+        );
+      },
     );
   }
 }

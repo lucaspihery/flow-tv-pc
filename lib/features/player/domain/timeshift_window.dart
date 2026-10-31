@@ -34,4 +34,11 @@ class TimeshiftWindow {
     if (target > liveEdge) return liveEdge;
     return target;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is TimeshiftWindow && other.start == start && other.liveEdge == liveEdge && other.position == position;
+
+  @override
+  int get hashCode => Object.hash(start, liveEdge, position);
 }
