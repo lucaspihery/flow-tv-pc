@@ -1,24 +1,74 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../domain/channel.dart';
 import '../../../../app/theme/app_theme.dart';
 
 /// Logo de la chaîne, avec les initiales en repli si l'image est absente ou cassée.
-class ChannelLogo extends StatelessWidget {
+///
+/// Le téléchargement ne démarre que si la tuile reste à l'écran un court instant : en faisant
+/// défiler une grande catégorie, les centaines de tuiles qui ne font que passer ne lancent plus
+/// chacune un téléchargement et un décodage, qui saturaient le réseau et ralentissaient l'affichage.
+class ChannelLogo extends StatefulWidget {
   const ChannelLogo({super.key, required this.channel, this.size = 56});
 
   final Channel channel;
   final double size;
 
+  /// Temps pendant lequel une tuile doit rester construite avant de charger son logo.
+  static const loadDelay = Duration(milliseconds: 150);
+
+  @override
+  State<ChannelLogo> createState() => _ChannelLogoState();
+}
+
+class _ChannelLogoState extends State<ChannelLogo> {
   /// Logos déjà en échec pendant cette session. Flutter ne garde pas les erreurs en cache : sans
   /// ce registre, chaque logo cassé serait retéléchargé à chaque passage de la tuile à l'écran.
   static final _broken = <String>{};
 
+  /// Logos déjà affichés une fois : ils sont en cache, on les montre sans attendre.
+  static final _shown = <String>{};
+
+  Timer? _delay;
+  bool _load = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _schedule();
+  }
+
+  @override
+  void didUpdateWidget(ChannelLogo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.channel.logoUrl != widget.channel.logoUrl) _schedule();
+  }
+
+  void _schedule() {
+    _delay?.cancel();
+    final url = widget.channel.logoUrl;
+    _load = url != null && _shown.contains(url);
+    if (url == null || _load || _broken.contains(url)) return;
+    _delay = Timer(ChannelLogo.loadDelay, () {
+      if (mounted) setState(() => _load = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    // Tuile sortie de l'écran avant la fin du délai : rien n'est téléchargé.
+    _delay?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final fallback = _Initials(name: channel.name, size: size);
-    final url = channel.logoUrl;
-    final logo = url == null || _broken.contains(url) ? null : url;
+    final size = widget.size;
+    final fallback = _Initials(name: widget.channel.name, size: size);
+    final url = widget.channel.logoUrl;
+    final logo = !_load || url == null || _broken.contains(url) ? null : url;
     return SizedBox.square(
       dimension: size,
       child: ClipRRect(
@@ -32,6 +82,11 @@ class ChannelLogo extends StatelessWidget {
                 cacheWidth: (size * 2).round(),
                 filterQuality: FilterQuality.medium,
                 gaplessPlayback: true,
+                frameBuilder: (context, child, frame, _) {
+                  if (frame == null) return fallback;
+                  _shown.add(logo);
+                  return child;
+                },
                 errorBuilder: (_, _, _) {
                   _broken.add(logo);
                   return fallback;
