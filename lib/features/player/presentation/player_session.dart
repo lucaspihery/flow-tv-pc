@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 
+import '../data/mpv_background.dart';
 import '../data/mpv_stats.dart';
 import '../domain/stream_info.dart';
 import '../domain/timeshift_window.dart';
@@ -33,6 +34,7 @@ class PlayerSession extends ChangeNotifier {
   late final List<StreamSubscription<Object?>> _subscriptions;
   late final Future<void> _configured;
   Timer? _poll;
+  MpvBackground? _background;
   bool _disposed = false;
 
   String? error;
@@ -62,6 +64,17 @@ class PlayerSession extends ChangeNotifier {
   }
 
   Future<void> open(String url) async {
+    await _pendingStats;
+    final background = _background;
+    if (_deinterlacing && background != null && !_disposed) {
+      // La chaîne suivante est peut-être progressive : on réévaluera avec ses propres images.
+      _deinterlacing = false;
+      final reset = background.run(const [], set: const {'deinterlace': 'no'});
+      _pendingStats = reset;
+      await reset;
+      _pendingStats = null;
+    }
+    if (_disposed) return;
     error = null;
     info = const StreamInfo();
     timeshift = null;
@@ -99,17 +112,44 @@ class PlayerSession extends ChangeNotifier {
     if (!player.state.playing) await player.play();
   }
 
+  /// Indique si mpv marque l'image affichée comme entrelacée.
+  static const _interlacedProperty = 'video-frame-info/interlaced';
+
+  static const _statsProperties = [
+    ...MpvStats.streamInfoProperties,
+    'time-pos',
+    'demuxer-cache-state',
+    _interlacedProperty,
+  ];
+
+  /// Accès à mpv en cours dans un isolate : le lecteur n'est libéré qu'après sa fin.
+  Future<void>? _pendingStats;
+
+  /// Le désentrelacement est-il demandé pour la chaîne en cours ?
+  bool _deinterlacing = false;
+
   Future<void> _refreshStats() async {
     final native = _native;
-    if (native == null || _disposed) return;
+    if (native == null || _disposed || _pendingStats != null) return;
+    final pending = _readStats(native);
+    _pendingStats = pending;
+    await pending;
+    _pendingStats = null;
+  }
+
+  Future<void> _readStats(NativePlayer native) async {
     try {
-      // Lectures en parallèle : une seule attente par seconde au lieu d'une par propriété.
-      const properties = [...MpvStats.streamInfoProperties, 'time-pos', 'demuxer-cache-state'];
-      final results = await Future.wait([
-        for (final p in properties) native.getProperty(p, waitForInitialization: false),
-      ]);
-      if (_disposed) return;
-      final values = Map.fromIterables(properties, results);
+      // Hors du thread de l'interface : la lecture peut attendre que mpv soit disponible.
+      final background = _background ??= MpvBackground(native);
+      final values = await background.run(_statsProperties);
+      if (_disposed || values.isEmpty) return;
+      // Beaucoup de chaînes TV sont diffusées en entrelacé (1080i) : sans désentrelacement,
+      // l'image est hachée (effet de peigne, mouvements saccadés). On ne l'active que pour ces
+      // flux, et une seule fois par chaîne : l'image désentrelacée n'est plus marquée comme telle.
+      if (values[_interlacedProperty] == 'yes' && !_deinterlacing) {
+        _deinterlacing = true;
+        await background.run(const [], set: const {'deinterlace': 'yes'});
+      }
 
       final newInfo = MpvStats.parseStreamInfo(values);
       final window = MpvStats.parseTimeshift(
@@ -121,7 +161,7 @@ class PlayerSession extends ChangeNotifier {
         _earliestPosition = window.position;
       }
       // Ne reconstruit le lecteur que si quelque chose a réellement changé (rien en pause, par exemple).
-      if (newInfo == info && window == timeshift) return;
+      if (_disposed || (newInfo == info && window == timeshift)) return;
       info = newInfo;
       timeshift = window;
       notifyListeners();
@@ -137,7 +177,13 @@ class PlayerSession extends ChangeNotifier {
     for (final s in _subscriptions) {
       s.cancel();
     }
-    player.dispose();
+    // Une lecture en cours dans un isolate utilise encore le contexte mpv : on attend sa fin.
+    final pending = _pendingStats;
+    if (pending == null) {
+      player.dispose();
+    } else {
+      pending.whenComplete(player.dispose);
+    }
     super.dispose();
   }
 }
