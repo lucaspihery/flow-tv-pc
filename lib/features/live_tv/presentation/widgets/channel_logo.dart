@@ -10,10 +10,15 @@ class ChannelLogo extends StatelessWidget {
   final Channel channel;
   final double size;
 
+  /// Logos déjà en échec pendant cette session. Flutter ne garde pas les erreurs en cache : sans
+  /// ce registre, chaque logo cassé serait retéléchargé à chaque passage de la tuile à l'écran.
+  static final _broken = <String>{};
+
   @override
   Widget build(BuildContext context) {
     final fallback = _Initials(name: channel.name, size: size);
-    final logo = channel.logoUrl;
+    final url = channel.logoUrl;
+    final logo = url == null || _broken.contains(url) ? null : url;
     return SizedBox.square(
       dimension: size,
       child: ClipRRect(
@@ -23,8 +28,14 @@ class ChannelLogo extends StatelessWidget {
             : Image.network(
                 logo,
                 fit: BoxFit.contain,
+                // Décodé à la taille affichée (×2 pour les écrans haute densité), pas en pleine résolution.
                 cacheWidth: (size * 2).round(),
-                errorBuilder: (_, _, _) => fallback,
+                filterQuality: FilterQuality.medium,
+                gaplessPlayback: true,
+                errorBuilder: (_, _, _) {
+                  _broken.add(logo);
+                  return fallback;
+                },
               ),
       ),
     );
@@ -34,12 +45,14 @@ class ChannelLogo extends StatelessWidget {
 class _Initials extends StatelessWidget {
   const _Initials({required this.name, required this.size});
 
+  static final _spaces = RegExp(r'\s+');
+
   final String name;
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    final words = name.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).take(2);
+    final words = name.split(_spaces).where((w) => w.isNotEmpty).take(2);
     final initials = words.map((w) => w.characters.first.toUpperCase()).join();
     // Teinte stable par chaîne, choisie dans la palette du logo.
     const palette = [AppColors.cyan, AppColors.blue, AppColors.violet, AppColors.magenta];

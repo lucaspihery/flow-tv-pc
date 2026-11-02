@@ -16,7 +16,7 @@ class XtreamApiClient {
   final XtreamAccount account;
 
   Future<XtreamUserInfo> authenticate() async {
-    final json = await _call();
+    final json = await _call(null, _identity);
     final userInfo = json is Map<String, Object?> ? json['user_info'] : null;
     if (userInfo is! Map<String, Object?>) {
       throw const AuthException('Identifiants refusés ou serveur Xtream invalide.');
@@ -27,11 +27,10 @@ class XtreamApiClient {
     return info;
   }
 
-  Future<List<XtreamCategory>> liveCategories() async =>
-      _list(await _call('get_live_categories')).map(XtreamCategory.fromJson).toList();
+  Future<List<XtreamCategory>> liveCategories() => _call('get_live_categories', _parseCategories);
 
-  Future<List<XtreamLiveStream>> liveStreams() async =>
-      _list(await _call('get_live_streams')).map(XtreamLiveStream.fromJson).toList();
+  /// Peut compter des dizaines de milliers d'entrées : décodée hors du thread de l'interface.
+  Future<List<XtreamLiveStream>> liveStreams() => _call('get_live_streams', _parseStreams);
 
   String liveStreamUrl(String streamId, {String extension = 'ts'}) {
     final user = Uri.encodeComponent(account.username);
@@ -39,11 +38,18 @@ class XtreamApiClient {
     return '${account.serverUrl}/live/$user/$pass/$streamId.$extension';
   }
 
-  Future<Object?> _call([String? action]) {
+  Future<T> _call<T>(String? action, T Function(Object? json) convert) {
     final uri = Uri.parse('${account.serverUrl}/player_api.php')
         .replace(queryParameters: {'username': account.username, 'password': account.password, 'action': ?action});
-    return _http.getJson(uri);
+    return _http.getJson(uri, convert);
   }
+
+  // Fonctions statiques : elles peuvent être exécutées dans un isolate.
+  static Object? _identity(Object? json) => json;
+
+  static List<XtreamCategory> _parseCategories(Object? json) => _list(json).map(XtreamCategory.fromJson).toList();
+
+  static List<XtreamLiveStream> _parseStreams(Object? json) => _list(json).map(XtreamLiveStream.fromJson).toList();
 
   static Iterable<Map<String, Object?>> _list(Object? json) {
     if (json is! List) throw const ParseException('Réponse inattendue du serveur Xtream.');

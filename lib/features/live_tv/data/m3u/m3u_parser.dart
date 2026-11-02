@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import '../../domain/channel.dart';
 
 /// Parseur de playlists M3U / M3U8 « étendues » (format IPTV classique).
@@ -11,6 +14,9 @@ class M3uParser {
   const M3uParser._();
 
   static final _attribute = RegExp(r'([\w-]+)="([^"]*)"');
+
+  /// Décode (UTF-8 tolérant) puis analyse une playlist brute. Utilisable dans un isolate.
+  static List<Channel> parseBytes(Uint8List bytes) => parse(utf8.decode(bytes, allowMalformed: true));
 
   static List<Channel> parse(String content) {
     final channels = <Channel>[];

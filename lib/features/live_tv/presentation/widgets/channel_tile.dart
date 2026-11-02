@@ -6,14 +6,14 @@ import '../../../channel_quality/presentation/channel_qualities_controller.dart'
 import '../../../favorites/presentation/favorites_controller.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../domain/channel.dart';
+import '../live_tv_providers.dart';
 import 'channel_logo.dart';
 
 /// Tuile d'une chaîne : légère mise en avant au survol, bordure en dégradé quand elle est en lecture.
 class ChannelTile extends ConsumerStatefulWidget {
-  const ChannelTile({super.key, required this.channel, required this.selected, required this.onTap});
+  const ChannelTile({super.key, required this.channel, required this.onTap});
 
   final Channel channel;
-  final bool selected;
   final VoidCallback onTap;
 
   @override
@@ -26,7 +26,9 @@ class _ChannelTileState extends ConsumerState<ChannelTile> {
   @override
   Widget build(BuildContext context) {
     final favorite = ref.watch(favoritesProvider.select((ids) => ids.contains(widget.channel.id)));
-    final highlighted = _hover || widget.selected;
+    // Seules l'ancienne et la nouvelle tuile en lecture se reconstruisent quand on change de chaîne.
+    final selected = ref.watch(currentChannelProvider.select((c) => c == widget.channel));
+    final highlighted = _hover || selected;
     final quality = ref.watch(channelQualitiesProvider.select((q) => q[widget.channel.id]));
 
     return MouseRegion(
@@ -45,7 +47,7 @@ class _ChannelTileState extends ConsumerState<ChannelTile> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               // La « bordure » est le dégradé visible autour du contenu.
-              gradient: widget.selected
+              gradient: selected
                   ? AppColors.brandGradient
                   : LinearGradient(
                       colors: [
@@ -56,7 +58,7 @@ class _ChannelTileState extends ConsumerState<ChannelTile> {
               boxShadow: [
                 if (highlighted)
                   BoxShadow(
-                    color: (widget.selected ? AppColors.violet : AppColors.blue).withValues(alpha: 0.35),
+                    color: (selected ? AppColors.violet : AppColors.blue).withValues(alpha: 0.35),
                     blurRadius: 22,
                     spreadRadius: -8,
                     offset: const Offset(0, 8),
@@ -84,17 +86,16 @@ class _ChannelTileState extends ConsumerState<ChannelTile> {
                             style: TextStyle(
                               fontSize: 13,
                               color: highlighted ? Colors.white : const Color(0xFFD5D7F5),
-                              fontWeight: widget.selected ? FontWeight.w700 : FontWeight.w600,
+                              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  if (widget.selected) const Positioned(top: 10, left: 10, child: _PlayingBadge()),
+                  if (selected) const Positioned(top: 10, left: 10, child: _PlayingBadge()),
                   // Chaîne déjà regardée : qualité mesurée alors par le lecteur, ex. « 4K · 50 fps ».
-                  if (quality != null && !widget.selected)
-                    Positioned(top: 8, left: 8, child: _QualityBadge(quality.label)),
+                  if (quality != null && !selected) Positioned(top: 8, left: 8, child: _QualityBadge(quality.label)),
                   // L'étoile n'apparaît qu'au survol, sauf si la chaîne est déjà en favori.
                   if (_hover || favorite)
                     Positioned(top: 2, right: 2, child: FavoriteButton(channel: widget.channel, size: 20)),

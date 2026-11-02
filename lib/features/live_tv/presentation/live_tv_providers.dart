@@ -26,13 +26,19 @@ final channelsProvider = FutureProvider<List<Channel>>((ref) => ref.watch(channe
 const allChannelsGroup = 'Toutes les chaînes';
 const favoritesGroup = 'Favoris';
 
-/// Catégories de la playlist, dans l'ordre d'apparition.
-final groupsProvider = Provider<List<String>>((ref) {
+/// Chaînes rangées par catégorie, dans l'ordre d'apparition. Calculé une seule fois par playlist,
+/// pour que changer de catégorie ne reparcoure pas toute la liste.
+final channelsByGroupProvider = Provider<Map<String, List<Channel>>>((ref) {
   final channels = ref.watch(channelsProvider).value ?? const [];
-  return [
-    ...{for (final c in channels) c.group},
-  ];
+  final byGroup = <String, List<Channel>>{};
+  for (final c in channels) {
+    (byGroup[c.group] ??= []).add(c);
+  }
+  return byGroup;
 });
+
+/// Catégories de la playlist, dans l'ordre d'apparition.
+final groupsProvider = Provider<List<String>>((ref) => ref.watch(channelsByGroupProvider).keys.toList());
 
 /// Chaînes favorites présentes dans la playlist, dans l'ordre d'ajout.
 final favoriteChannelsProvider = Provider<List<Channel>>((ref) {
@@ -42,15 +48,12 @@ final favoriteChannelsProvider = Provider<List<Channel>>((ref) {
 });
 
 final groupCountsProvider = Provider<Map<String, int>>((ref) {
-  final channels = ref.watch(channelsProvider).value ?? const [];
-  final counts = <String, int>{
-    allChannelsGroup: channels.length,
+  final byGroup = ref.watch(channelsByGroupProvider);
+  return {
+    allChannelsGroup: ref.watch(channelsProvider).value?.length ?? 0,
     favoritesGroup: ref.watch(favoriteChannelsProvider).length,
+    for (final MapEntry(:key, :value) in byGroup.entries) key: value.length,
   };
-  for (final c in channels) {
-    counts[c.group] = (counts[c.group] ?? 0) + 1;
-  }
-  return counts;
 });
 
 final selectedGroupProvider = NotifierProvider<SelectedGroup, String>(SelectedGroup.new);
@@ -77,19 +80,25 @@ class SearchQuery extends Notifier<String> {
   void set(String query) => state = query;
 }
 
+/// Noms en minuscules, calculés une fois par chaîne : la recherche ne refait pas `toLowerCase()`
+/// sur des milliers de noms à chaque touche tapée.
+final _searchKeys = Expando<String>('searchKey');
+
+String _searchKey(Channel c) => _searchKeys[c] ??= c.name.toLowerCase();
+
 /// Chaînes de la sélection courante (tout, favoris ou une catégorie), filtrées par la recherche.
 final visibleChannelsProvider = Provider<List<Channel>>((ref) {
   final group = ref.watch(selectedGroupProvider);
   final query = ref.watch(searchQueryProvider).trim().toLowerCase();
   final source = switch (group) {
+    allChannelsGroup => ref.watch(channelsProvider).value ?? const <Channel>[],
     favoritesGroup => ref.watch(favoriteChannelsProvider),
-    _ => ref.watch(channelsProvider).value ?? const <Channel>[],
+    _ => ref.watch(channelsByGroupProvider)[group] ?? const <Channel>[],
   };
+  if (query.isEmpty) return source;
   return [
     for (final c in source)
-      if ((group == allChannelsGroup || group == favoritesGroup || c.group == group) &&
-          (query.isEmpty || c.name.toLowerCase().contains(query)))
-        c,
+      if (_searchKey(c).contains(query)) c,
   ];
 });
 

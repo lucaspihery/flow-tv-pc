@@ -38,6 +38,18 @@ class StreamInfo {
   }
 
   String? get resolutionLabel => (width != null && height != null) ? '$width×$height' : null;
+
+  @override
+  bool operator ==(Object other) =>
+      other is StreamInfo &&
+      other.width == width &&
+      other.height == height &&
+      other.fps == fps &&
+      other.videoCodec == videoCodec &&
+      other.bitrate == bitrate;
+
+  @override
+  int get hashCode => Object.hash(width, height, fps, videoCodec, bitrate);
 }
 
 /// Qualité à mémoriser pour la chaîne : `null` tant que la résolution est inconnue.

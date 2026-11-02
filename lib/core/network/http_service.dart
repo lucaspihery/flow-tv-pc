@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../concurrency/background.dart';
 import '../errors/app_exception.dart';
 
 final httpClientProvider = Provider<http.Client>((ref) {
@@ -24,7 +26,8 @@ class HttpService {
   final http.Client _client;
   final Duration timeout;
 
-  Future<String> getText(Uri uri) async {
+  /// Corps brut de la réponse, à décoder par l'appelant (éventuellement dans un isolate).
+  Future<Uint8List> getBytes(Uri uri) async {
     final http.Response response;
     try {
       response = await _client.get(uri, headers: {'User-Agent': userAgent}).timeout(timeout);
@@ -42,15 +45,25 @@ class HttpService {
     if (response.statusCode != 200) {
       throw NetworkException('Le serveur a répondu avec une erreur HTTP ${response.statusCode}.');
     }
-    return utf8.decode(response.bodyBytes, allowMalformed: true);
+    return response.bodyBytes;
   }
 
-  Future<Object?> getJson(Uri uri) async {
-    final body = await getText(uri);
+  /// Télécharge du JSON et le convertit avec [convert].
+  ///
+  /// Pour une grosse réponse (liste des chaînes Xtream), décodage et conversion se font dans un
+  /// isolate : [convert] doit alors être une fonction statique ou de haut niveau.
+  Future<T> getJson<T>(Uri uri, T Function(Object? json) convert) async {
+    final bytes = await getBytes(uri);
+    return runInBackground(() => decodeJson(bytes, convert), heavy: bytes.length > backgroundThresholdBytes);
+  }
+
+  static T decodeJson<T>(Uint8List bytes, T Function(Object? json) convert) {
+    final Object? json;
     try {
-      return jsonDecode(body);
+      json = jsonDecode(utf8.decode(bytes, allowMalformed: true));
     } on FormatException {
       throw const ParseException('Réponse inattendue du serveur.');
     }
+    return convert(json);
   }
 }
